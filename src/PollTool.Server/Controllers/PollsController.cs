@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PollTool.Server.Models;
+using PollTool.Server.Models.Api;
+using PollTool.Server.Models.Requests;
+using PollTool.Server.Models.Response;
+using ApiPoll = PollTool.Server.Models.Api.Poll;
+using DbPoll = PollTool.Server.Models.Poll;
 
 namespace PollTool.Server.Controllers
 {
@@ -14,94 +20,81 @@ namespace PollTool.Server.Controllers
     public class PollsController : ControllerBase
     {
         private readonly PollContext _context;
+        private readonly ILogger _logger;
 
-        public PollsController(PollContext context)
+        public PollsController(PollContext context, ILogger<PollsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: api/Polls
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Poll>>> GetPolls()
+        [HttpPost]
+        public async Task<ActionResult<GetPollsResponse>> GetPolls([FromBody]BaseRequest request)
         {
-            return await _context.Polls.ToListAsync();
+            if (!request.IsValid()) return BadRequest();
+
+
+            var response = new GetPollsResponse();
+            try
+            {
+                var polls = await _context.Polls.Select(p => new ApiPoll
+                {
+                    Title = p.Title,
+                    Description = p.Description,
+                    PollId = p.PollId
+                }).ToListAsync();
+                response.Polls = polls;
+                response.Success = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(GetPolls));
+                response.ErrorMessage = "Critical error, please contact the administrator";
+            }
+
+
+            return response;
         }
 
         // GET: api/Polls/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Poll>> GetPoll(int id)
+        [HttpPost("{id}")]
+        public async Task<ActionResult<GetPollResponse>> GetPoll([FromBody] GetPollRequest request)
         {
-            var poll = await _context.Polls.FindAsync(id);
+            if (!request.IsValid()) return BadRequest();
+            //var poll = await _context.Polls.FindAsync(id);
 
-            if (poll == null)
-            {
-                return NotFound();
-            }
+            //if (poll == null)
+            //{
+            //    return NotFound();
+            //}
 
-            return poll;
+            return new GetPollResponse();
         }
 
         // PUT: api/Polls/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutPoll(int id, Poll poll)
+        public async Task<ActionResult<CreatePollResponse>> CreatePoll([FromBody] CreatePollRequest request)
         {
-            if (id != poll.PollId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(poll).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PollExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Polls
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Poll>> PostPoll(Poll poll)
-        {
-            _context.Polls.Add(poll);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPoll", new { id = poll.PollId }, poll);
+            if (!request.IsValid()) return BadRequest();
+            return new CreatePollResponse();
         }
 
         // DELETE: api/Polls/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePoll(int id)
+        public async Task<ActionResult<BaseResponse>> DeletePoll([FromBody] DeletePollRequest request)
         {
-            var poll = await _context.Polls.FindAsync(id);
-            if (poll == null)
+            if (!request.IsValid()) return BadRequest();
+            //TODO: Log Exceptions
+            if (await _context.Polls.FindAsync(request.PollID) is DbPoll foundPoll)
             {
-                return NotFound();
+                _context.Polls.Remove(foundPoll);
+                await _context.SaveChangesAsync();
+                return new BaseResponse { Success = true };
             }
+            return new BaseResponse { ErrorMessage = "Poll not found!" };
 
-            _context.Polls.Remove(poll);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool PollExists(int id)
-        {
-            return _context.Polls.Any(e => e.PollId == id);
         }
     }
 }

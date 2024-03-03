@@ -1,4 +1,4 @@
-﻿namespace PollTool.Server.Models.Requests
+﻿namespace PollTool.Server.Models.Api
 {
     public class Answer
     {
