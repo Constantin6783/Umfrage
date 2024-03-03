@@ -1,0 +1,66 @@
+Scaffold Database 
+dotnet-ef dbcontext scaffold "Server=LAPTOP-HP;Database=Umfrage;Trusted_Connection=True;User ID=sa;Password=123;TrustServerCertificate=True" Microsoft.EntityFrameworkCore.SqlServer --no-build -o Models
+
+Database
+CREATE TABLE dbo.Poll
+	(
+	PollID int NOT NULL IDENTITY (1, 1),
+	Title varchar(MAX) NOT NULL,
+	Description varchar(MAX) NOT NULL,
+	CreatedBy varchar(255) NOT NULL
+	)  ON [PRIMARY]
+	 TEXTIMAGE_ON [PRIMARY]
+GO
+ALTER TABLE dbo.Poll ADD CONSTRAINT
+	PK_Poll PRIMARY KEY CLUSTERED 
+	(
+	PollID
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+
+CREATE TABLE dbo.Question
+	(
+	QuestionID int NOT NULL IDENTITY (1, 1),
+	Title varchar(MAX) NOT NULL,
+	PollID int NOT NULL
+	)  ON [PRIMARY]
+	 TEXTIMAGE_ON [PRIMARY]
+GO
+ALTER TABLE dbo.Question ADD CONSTRAINT
+	PK_Question PRIMARY KEY CLUSTERED 
+	(
+	QuestionID
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+CREATE TABLE dbo.Answer
+	(
+	AnswerID int NOT NULL IDENTITY (1, 1),
+	Text varchar(MAX) NOT NULL,
+	QuestionID int NOT NULL
+	)  ON [PRIMARY]
+	 TEXTIMAGE_ON [PRIMARY]
+GO
+ALTER TABLE dbo.Answer ADD CONSTRAINT
+	PK_Answer PRIMARY KEY CLUSTERED 
+	(
+	AnswerID
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO
+CREATE TABLE dbo.UserAnswer
+	(
+	UserAnswerID bigint NOT NULL IDENTITY (1, 1),
+	AnswerID int NOT NULL,
+	QuestionID int NOT NULL,
+	AnsweredBy varchar(255) NOT NULL
+	)  ON [PRIMARY]
+GO
+ALTER TABLE dbo.UserAnswer ADD CONSTRAINT
+	PK_UserAnswer PRIMARY KEY CLUSTERED 
+	(
+	UserAnswerID
+	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+
+GO

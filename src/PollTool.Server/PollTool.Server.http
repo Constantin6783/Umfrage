@@ -1,0 +1,6 @@
+@PollTool.Server_HostAddress = http://localhost:5134
+
+GET {{PollTool.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
