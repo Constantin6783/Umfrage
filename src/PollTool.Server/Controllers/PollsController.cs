@@ -30,12 +30,19 @@ namespace PollTool.Server.Controllers
 
         // GET: api/Polls
         [HttpPost]
-        public async Task<ActionResult<GetPollsResponse>> GetPolls([FromBody]BaseRequest request)
+        public async Task<ActionResult<GetPollsResponse>> GetPolls([FromBody] BaseRequest request)
         {
             if (!request.IsValid()) return BadRequest();
 
 
             var response = new GetPollsResponse();
+
+            response.Polls = new List<ApiPoll> { new ApiPoll { Description  ="Tolle Umfrage 1", PollId = 1, Title = "Umfrage 1"},
+            new ApiPoll { Description  ="Tolle Umfrage 2", PollId = 2, Title = "Umfrage 2"} ,
+            new ApiPoll { Description  ="Tolle Umfrage 3", PollId = 3, Title = "Umfrage 3"} ,};
+
+            response.Success = true;
+            return response;
             try
             {
                 var polls = await _context.Polls.Select(p => new ApiPoll

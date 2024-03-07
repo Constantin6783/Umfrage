@@ -5,6 +5,8 @@ VisualStudioVersion = 17.9.34622.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PollTool.Server", "PollTool.Server\PollTool.Server.csproj", "{3CA7FF73-12EB-4D10-A601-40746EA5F869}"
 EndProject
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "polltool.client", "PollTool.Client\polltool.client.esproj", "{9DA6E20C-C1B9-4034-9E89-175D60209B52}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,12 @@ Global
 		{3CA7FF73-12EB-4D10-A601-40746EA5F869}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3CA7FF73-12EB-4D10-A601-40746EA5F869}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3CA7FF73-12EB-4D10-A601-40746EA5F869}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DA6E20C-C1B9-4034-9E89-175D60209B52}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
