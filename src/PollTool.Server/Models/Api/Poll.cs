@@ -8,5 +8,6 @@
 
         public string Description { get; set; } = null!;
         public bool DoneByUser { get; set; }
+        public bool OwnedByUser { get; internal set; }
     }
 }

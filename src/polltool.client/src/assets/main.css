@@ -2,6 +2,7 @@
 @import "~bootstrap/dist/css/bootstrap.css";
 @import "~bootstrap/dist/css/bootstrap-reboot.css";
 @import "~bootstrap/dist/css/bootstrap-utilities.css";
+@import "~swal2/dist/sweetalert2.css";
 
 /*
 #app {

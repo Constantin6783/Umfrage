@@ -2,13 +2,11 @@
 <script setup>
     import { onMounted, ref } from "vue";
     import { Modal } from 'bootstrap';
+
     const emit = defineEmits(['onClosed'])
     const title = ref('');
     const description = ref('');
     const answers = ref([]);
-
-
-
 
     var myModal;
     async function closeModal(save) {
@@ -18,15 +16,12 @@
             let duplicatedAnswers = rawAnswers.filter((item, index) => rawAnswers.indexOf(item) !== index);
 
             if(title.value === '')error = "Titel darf nicht leer sein!";
-            else if(answers.value.length === 0)error = "Es müssen mind. 2 Antworten verfügbar sein!";
-            else if(duplicatedAnswers.length >0)
-            {
-                error = `Antworten müssen einzigartig sein!\nFolgende Anworten sind doppelt vorhanden: ${duplicatedAnswers.join(", ")}`    
-            }
+            else if(answers.value.length < 2) error = "Es müssen mind. 2 Antworten verfügbar sein!";
+            else if (duplicatedAnswers.length > 0) error = `Antworten müssen einzigartig sein!\nFolgende Anworten sind doppelt vorhanden: ${duplicatedAnswers.join(", ")}`
             else
             {
                 
-                let resObj = await window.PostData('http://localhost:5134/api/Polls/CreatePoll',
+                let resObj = await window.PostData('http://192.168.178.23:5134/api/Polls/CreatePoll',
                     {
                         title: title.value,
                         description: description.value,
@@ -78,7 +73,7 @@
                                 <div class="me-2 ">
                                     <input class="form-control" v-model="question.text" />
                                 </div>
-                                <button class="btn btn-secondary" @click="answers.splice(answers.indexOf(question), 1)">🗑</button>
+                                <button class="btn btn-danger" @click="answers.splice(answers.indexOf(question), 1)">🗑</button>
                             </div>
                         </li>
                     </ul>

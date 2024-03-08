@@ -13,6 +13,7 @@ export default defineConfig({
     alias: {
           '@': fileURLToPath(new URL('./src', import.meta.url)),
           '~bootstrap': fileURLToPath(new URL('./node_modules/bootstrap', import.meta.url)),
+          '~swal2': fileURLToPath(new URL('./node_modules/sweetalert2', import.meta.url)),
     }
   }
 })

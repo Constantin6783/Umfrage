@@ -14,7 +14,7 @@
             }
         })
             .then(async response => resObj = await response.json())
-            .catch(error => resObj = { success: false, error });
+            .catch(error => resObj = { success: false, errorMessage: error });
 
         isBusy.value = false;
         return resObj;
