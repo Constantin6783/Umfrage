@@ -1,5 +1,8 @@
 @import './base.css';
 @import "~bootstrap/dist/css/bootstrap.css";
+@import "~bootstrap/dist/css/bootstrap-reboot.css";
+@import "~bootstrap/dist/css/bootstrap-utilities.css";
+
 /*
 #app {
   max-width: 1280px;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +16,19 @@ using DbPoll = PollTool.Server.Models.Poll;
 
 namespace PollTool.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class PollsController : ControllerBase
     {
         private readonly PollContext _context;
         private readonly ILogger _logger;
+
+        private static List<ApiPoll> _debugPolls = new List<ApiPoll>
+        {
+            new ApiPoll { Description  ="Tolle Umfrage 1", PollId = 1, Title = "Umfrage 1", DoneByUser = true},
+            new ApiPoll { Description  ="Tolle Umfrage 2", PollId = 2, Title = "Umfrage 2", DoneByUser = true} ,
+            new ApiPoll { Description  ="Tolle Umfrage 3", PollId = 3, Title = "Umfrage 3", DoneByUser = false} ,
+        };
 
         public PollsController(PollContext context, ILogger<PollsController> logger)
         {
@@ -37,19 +45,21 @@ namespace PollTool.Server.Controllers
 
             var response = new GetPollsResponse();
 
-            response.Polls = new List<ApiPoll> { new ApiPoll { Description  ="Tolle Umfrage 1", PollId = 1, Title = "Umfrage 1"},
-            new ApiPoll { Description  ="Tolle Umfrage 2", PollId = 2, Title = "Umfrage 2"} ,
-            new ApiPoll { Description  ="Tolle Umfrage 3", PollId = 3, Title = "Umfrage 3"} ,};
+            response.Polls = _debugPolls;
 
             response.Success = true;
             return response;
             try
             {
+                //var uid = HttpContext.Connection.Id
+                var uid = HttpContext.Connection.RemoteIpAddress.Address;
                 var polls = await _context.Polls.Select(p => new ApiPoll
                 {
                     Title = p.Title,
                     Description = p.Description,
-                    PollId = p.PollId
+                    PollId = p.PollId,
+                    DoneByUser = _context.Questions.Where(q => q.PollId == p.PollId)
+                    .Any(q => _context.UserAnswers.Any(ua => ua.QuestionId == q.QuestionId && ua.UserAnswerId == uid))
                 }).ToListAsync();
                 response.Polls = polls;
                 response.Success = true;
@@ -64,32 +74,47 @@ namespace PollTool.Server.Controllers
             return response;
         }
 
-        // GET: api/Polls/5
-        [HttpPost("{id}")]
-        public async Task<ActionResult<GetPollResponse>> GetPoll([FromBody] GetPollRequest request)
-        {
-            if (!request.IsValid()) return BadRequest();
-            //var poll = await _context.Polls.FindAsync(id);
-
-            //if (poll == null)
-            //{
-            //    return NotFound();
-            //}
-
-            return new GetPollResponse();
-        }
-
-        // PUT: api/Polls/5
+        // POST: api/CreatePoll
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+        [HttpPost]
         public async Task<ActionResult<CreatePollResponse>> CreatePoll([FromBody] CreatePollRequest request)
         {
             if (!request.IsValid()) return BadRequest();
-            return new CreatePollResponse();
+
+            if(_debugPolls.Any(p => p.Title == request.Title)) return new CreatePollResponse { ErrorMessage = $"Umfrage '{request.Title}' existiert bereits!" };
+            var response = new CreatePollResponse();
+            _debugPolls.Add( new ApiPoll { Title = request.Title, Description = request.Description, DoneByUser = false });
+            response.Success = true;
+            return response;
+
+
+            try
+            {
+                if (_context.Polls.Any(p => p.Title == request.Title)) return new CreatePollResponse { ErrorMessage = $"Umfrage '{request.Title}' existiert bereits!" };
+                _context.Polls.Add(new DbPoll
+                {
+                    Title = request.Title,
+                    Description = request.Description,
+                    CreatedBy = HttpContext.ToString()
+                });
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(CreatePoll));
+                response.ErrorMessage = "Critical error, please contact the administrator";
+            }
+
+
+
+            return response;
         }
 
         // DELETE: api/Polls/5
-        [HttpDelete("{id}")]
+        [HttpPost]
         public async Task<ActionResult<BaseResponse>> DeletePoll([FromBody] DeletePollRequest request)
         {
             if (!request.IsValid()) return BadRequest();

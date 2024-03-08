@@ -1,13 +1,25 @@
 <script setup>
-    import { onMounted, resolveComponent, ref } from "vue";
-    
-    import HelloWorld from './components/HelloWorld.vue'
-    import TheWelcome from './components/TheWelcome.vue'
-    import { defineAsyncComponent } from 'vue'
-    const showpolls = ref(true);
-    function mountOverview() {
-        showpolls.value = !showpolls.value;
+    import { onMounted, resolveComponent, ref, defineComponent } from "vue";
+    import PollOverview from './components/PollOverview.vue'
+    const isBusy = ref(true);
+
+    window.PostData = async function PostData(url, data) {
+        let resObj;
+        isBusy.value = true;
+        await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+            .then(async response => resObj = await response.json())
+            .catch(error => resObj = { success: false, error });
+
+        isBusy.value = false;
+        return resObj;
     }
+
 </script>
 
 <template>
@@ -23,19 +35,34 @@
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="#" @click="mountOverview">Umfragen</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Link</a>
-                    </li>
                 </ul>
             </div>
         </div>
     </nav>
-    <div class="row">
-        <div id="content" class="col col-lg-6 offset-lg-3" style="background:pink">
-            <HelloWorld v-if="showpolls"/>
+    <div id="content" class="mx-5">
+        <PollOverview ref="pollOverview" />
+        <div id="busy-shadow" v-if="isBusy">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
         </div>
     </div>
 </template>
 
 <style scoped>
+    #busy-shadow {
+        background: #80808099;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+    }
+
+        #busy-shadow .spinner-border {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+        }
 </style>
