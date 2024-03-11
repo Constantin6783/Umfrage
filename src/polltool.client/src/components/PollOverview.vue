@@ -21,7 +21,8 @@
         if (typeof refresh === 'boolean' && refresh)
             updatePolls();
 
-    } async function deletePoll(poll) {
+    }
+    async function deletePoll(poll) {
         var deletePoll = (await Swal.fire({
             title: 'Nachfrage',
             text: `Möchten Sie die Umfrage '${poll.title}' wirklich löschen?`,
@@ -39,9 +40,9 @@
                                 });
             else alert(resObj.errorMessage);
             updatePolls();
-
         }
     }
+    
 </script>
 
 <template>

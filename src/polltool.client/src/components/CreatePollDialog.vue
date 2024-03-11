@@ -45,7 +45,6 @@
         myModal.show();
     })
 </script>
-
 <template>
     <div id="dlg-create-poll" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document"> 

@@ -7,13 +7,17 @@ using Azure.Core;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite.Storage.Internal;
 using PollTool.Server.Models;
 using PollTool.Server.Models.Api;
 using PollTool.Server.Models.Requests;
 using PollTool.Server.Models.Response;
 using ApiPoll = PollTool.Server.Models.Api.Poll;
 using DbPoll = PollTool.Server.Models.Poll;
-
+using ApiQuestion = PollTool.Server.Models.Api.Question;
+using DbQuestion = PollTool.Server.Models.Question;
+using ApiAnswer = PollTool.Server.Models.Api.Answer;
+using DbAnswer = PollTool.Server.Models.Answer;
 namespace PollTool.Server.Controllers
 {
     [Route("api/[controller]/[action]")]
@@ -23,17 +27,10 @@ namespace PollTool.Server.Controllers
         private readonly PollContext _context;
         private readonly ILogger _logger;
 
-        private static List<ApiPoll> _debugPolls = new List<ApiPoll>
-        {
-            new ApiPoll { Description  ="Tolle Umfrage 1", PollId = 1, Title = "Umfrage 1", DoneByUser = true, OwnedByUser = false},
-            new ApiPoll { Description  ="Tolle Umfrage 2", PollId = 2, Title = "Umfrage 2", DoneByUser = true, OwnedByUser = false},
-            new ApiPoll { Description  ="Tolle Umfrage 3", PollId = 3, Title = "Umfrage 3", DoneByUser = false, OwnedByUser = true} ,
-        };
-
         public PollsController(PollContext context, ILogger<PollsController> logger)
         {
             _context = context;
-            _logger = logger;
+            _logger = logger;            
         }
 
         // GET: api/Polls
@@ -45,10 +42,6 @@ namespace PollTool.Server.Controllers
 
             var response = new GetPollsResponse();
 
-            response.Polls = _debugPolls;
-
-            response.Success = true;
-            return response;
             try
             {
                 //var uid = HttpContext.Connection.Id
@@ -83,34 +76,40 @@ namespace PollTool.Server.Controllers
         {
             if (!request.IsValid()) return BadRequest();
 
-            if (_debugPolls.Any(p => p.Title == request.Title)) return new CreatePollResponse { ErrorMessage = $"Umfrage '{request.Title}' existiert bereits!" };
+            
             var response = new CreatePollResponse();
-            _debugPolls.Add(new ApiPoll { Title = request.Title, Description = request.Description, DoneByUser = false, OwnedByUser = true, PollId = _debugPolls.Max(p => p.PollId) + 1});
-            response.Success = true;
-            return response;
 
 
             try
             {
                 if (_context.Polls.Any(p => p.Title == request.Title)) return new CreatePollResponse { ErrorMessage = $"Umfrage '{request.Title}' existiert bereits!" };
-                _context.Polls.Add(new DbPoll
+                var ip = HttpContext.Connection.RemoteIpAddress.ToString();
+                var poll = _context.Polls.Add(new DbPoll
                 {
                     Title = request.Title,
                     Description = request.Description,
-                    CreatedBy = HttpContext.ToString()
-                });
+                    CreatedBy = ip
+                }).Entity;
+                await _context.SaveChangesAsync();
 
+                var question = _context.Questions.Add(new DbQuestion
+                {
+                     PollId = poll.PollId,
+                      Title = request.Title,
+                }).Entity;
 
+                await _context.SaveChangesAsync();
 
+                _context.Answers.AddRange(request.Answers.Select(a => new DbAnswer { QuestionId = question.QuestionId, Text = a.Text }));
 
+                await _context.SaveChangesAsync();
+                response.Success = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(CreatePoll));
                 response.ErrorMessage = "Critical error, please contact the administrator";
             }
-
-
 
             return response;
         }
@@ -121,13 +120,6 @@ namespace PollTool.Server.Controllers
         {
             if (!request.IsValid()) return BadRequest();
 
-            if (_debugPolls.FirstOrDefault(p => p.PollId == request.PollID) is ApiPoll pollToDelete)
-            {                
-                _debugPolls.Remove(pollToDelete);
-                return new BaseResponse { Success = true };
-
-            }
-            return new BaseResponse { ErrorMessage = "Poll not found!" };
             var ip = HttpContext.Connection.RemoteIpAddress.ToString();
             if (await _context.Polls.FindAsync(request.PollID) is DbPoll foundPoll)
             {
