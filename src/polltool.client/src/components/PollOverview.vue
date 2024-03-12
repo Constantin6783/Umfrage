@@ -1,7 +1,9 @@
 ﻿<script setup>
     import { onMounted, resolveComponent, ref, createBlock } from "vue";
     import CreatePollDialog from './CreatePollDialog.vue'
-    import Swal from 'sweetalert2'    
+    import Swal from 'sweetalert2'
+    import { Client, BaseRequest, DeletePollRequest } from '../service/Client'
+
 
     const createPoll = ref(false);
     const polls = ref([])
@@ -11,7 +13,17 @@
     })
 
     async function updatePolls() {
-        let resObj = await window.PostData('http://192.168.178.23:5134/api/Polls/GetPolls', { apiKey: 'test' })
+
+        let client = new Client('http://192.168.178.23:5134')
+        let resObj;
+        window.isBusy(true);
+
+        await client.getPolls(new BaseRequest({ apiKey: '' }))
+            .then(r => resObj = r)
+            .catch(e => resObj = {success: false, errorMessage: e.message });
+
+        window.isBusy(false);
+
         if (resObj.success) polls.value = resObj.polls;
         else alert(resObj.errorMessage);
     }
@@ -32,7 +44,17 @@
         })).isConfirmed;
 
         if (deletePoll) {
-            var resObj = await window.PostData('http://192.168.178.23:5134/api/Polls/DeletePoll', { PollID: poll.pollId, apiKey: 'test' });
+
+            let client = new Client('http://192.168.178.23:5134')
+            let resObj;
+            window.isBusy(true);
+
+            await client.deletePoll(new DeletePollRequest({ pollID: poll.pollId, apiKey: 'test' }))
+                .then(r => resObj = r)
+                .catch(e => resObj = { success: false, errorMessage: e.message });
+
+            window.isBusy(false);
+
             if (resObj.success) Swal.fire({
                                   title: "Erfolg!",
                                   text: "Umfrage erfolgreich gelöscht!",

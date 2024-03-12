@@ -1,13 +1,14 @@
 ﻿
-<script setup>
+<script setup >
     import { onMounted, ref } from "vue";
+    import { Answer, Client, CreatePollRequest } from '../service/Client'
     import { Modal } from 'bootstrap';
 
     const emit = defineEmits(['onClosed'])
     const title = ref('');
     const description = ref('');
     const answers = ref([]);
-
+    
     var myModal;
     async function closeModal(save) {
         if(save){            
@@ -20,14 +21,21 @@
             else if (duplicatedAnswers.length > 0) error = `Antworten müssen einzigartig sein!\nFolgende Anworten sind doppelt vorhanden: ${duplicatedAnswers.join(", ")}`
             else
             {
-                
-                let resObj = await window.PostData('http://192.168.178.23:5134/api/Polls/CreatePoll',
-                    {
-                        title: title.value,
-                        description: description.value,
-                        answers: answers.value,
-                        apiKey: 'test'
-                    });
+
+                let client = new Client('http://192.168.178.23:5134')
+                let resObj;
+                window.isBusy(true);
+
+                await client.createPoll(new CreatePollRequest({
+                    title: title.value,
+                    description: description.value,
+                    answers: answers.value.map(a => new Answer({ text:a.text })),
+                    apiKey: 'test'
+                }))
+                    .then(r => resObj = r)
+                    .catch(e => resObj = { success: false, errorMessage: e.message });
+
+                window.isBusy(false);
 
                 if (!resObj.success) error = resObj.errorMessage;
             }
@@ -45,6 +53,7 @@
         myModal.show();
     })
 </script>
+
 <template>
     <div id="dlg-create-poll" class="modal fade" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document"> 

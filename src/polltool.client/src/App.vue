@@ -2,24 +2,7 @@
     import { onMounted, resolveComponent, ref, defineComponent } from "vue";
     import PollOverview from './components/PollOverview.vue'
     const isBusy = ref(true);
-
-    window.PostData = async function PostData(url, data) {
-        let resObj;
-        isBusy.value = true;
-        await fetch(url, {
-            method: 'POST',
-            body: JSON.stringify(data),
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-            .then(async response => resObj = await response.json())
-            .catch(error => resObj = { success: false, errorMessage: error });
-
-        isBusy.value = false;
-        return resObj;
-    }
-
+    window.isBusy = (value) => isBusy.value = value;
 </script>
 
 <template>
