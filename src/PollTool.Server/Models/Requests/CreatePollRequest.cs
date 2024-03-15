@@ -1,4 +1,6 @@
-﻿namespace PollTool.Server.Models.Requests
+﻿using PollTool.Server.Models.Api;
+
+namespace PollTool.Server.Models.Requests
 {
     public class CreatePollRequest:BaseRequest
     {

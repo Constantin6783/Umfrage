@@ -1,24 +1,26 @@
-﻿<script setup>
+﻿<script setup lang="ts">
     import { onMounted, resolveComponent, ref, createBlock } from "vue";
     import CreatePollDialog from './CreatePollDialog.vue'
+    import  ProcessPollDialog  from './ProcessPollDialog.vue'
     import Swal from 'sweetalert2'
     import { Client, BaseRequest, DeletePollRequest } from '../service/Client'
 
-
     const createPoll = ref(false);
+    const processPollID = ref(-1);
     const polls = ref([])
+    
 
     onMounted(() => {
         updatePolls();
     })
 
     async function updatePolls() {
-
-        let client = new Client('http://192.168.178.23:5134')
+        
+        let client = new Client()
         let resObj;
         window.isBusy(true);
 
-        await client.getPolls(new BaseRequest({ apiKey: '' }))
+        await client.getPolls(new BaseRequest({ apiKey:'ValidApiKey' }))
             .then(r => resObj = r)
             .catch(e => resObj = {success: false, errorMessage: e.message });
 
@@ -32,8 +34,17 @@
         createPoll.value = !createPoll.value;
         if (typeof refresh === 'boolean' && refresh)
             updatePolls();
-
     }
+
+    async function onProcessPoll(param) {
+        
+        if (typeof param === 'number') processPollID.value = param;
+        else processPollID.value = -1;
+
+        if (typeof param === 'boolean' && param)
+            updatePolls();
+    }
+    
     async function deletePoll(poll) {
         var deletePoll = (await Swal.fire({
             title: 'Nachfrage',
@@ -45,11 +56,11 @@
 
         if (deletePoll) {
 
-            let client = new Client('http://192.168.178.23:5134')
+            let client = new Client()
             let resObj;
             window.isBusy(true);
 
-            await client.deletePoll(new DeletePollRequest({ pollID: poll.pollId, apiKey: 'test' }))
+            await client.deletePoll(new DeletePollRequest({ pollID: poll.pollId, apiKey: 'ValidApiKey' }))
                 .then(r => resObj = r)
                 .catch(e => resObj = { success: false, errorMessage: e.message });
 
@@ -83,7 +94,7 @@
                 <tr v-for="poll in polls">
                     <td>{{poll.title}}</td>
                     <td>{{poll.description}}</td>
-                    <td v-if="!poll.doneByUser" width="150px"><button class="btn btn-primary btn-process" @click="processPoll">Teilnehmen</button></td>
+                    <td v-if="!poll.doneByUser" width="150px"><button class="btn btn-primary btn-process" @click="onProcessPoll(poll.pollId)">Teilnehmen</button></td>
                     <td v-if="poll.doneByUser" width="150px"><button class="btn btn-primary btn-processed disabled">Teilgenommen</button></td>
                     <td width="100px"><button class="btn btn-primary">Statistiken</button></td>
                     <td width="100px"><button v-if="poll.ownedByUser" class="btn btn-danger warning" @click="deletePoll(poll)">🗑</button></td>
@@ -93,6 +104,7 @@
 
     </div>
     <CreatePollDialog v-if="createPoll" @onClosed="addPoll" />
+    <ProcessPollDialog v-if="processPollID > 0" @onClosed="onProcessPoll" :pollid="processPollID"/>
 </template>
 
 

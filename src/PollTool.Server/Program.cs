@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Cors.Infrastructure;
-using PollTool.Server.Models;
+using PollTool.Server.Models.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +15,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("MyPolicy",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost").AllowAnyHeader().AllowAnyMethod();
+            policy.AllowAnyHeader().AllowAnyMethod()
+            .SetIsOriginAllowed(o => o.Contains(":8080"));
         });
 });
 

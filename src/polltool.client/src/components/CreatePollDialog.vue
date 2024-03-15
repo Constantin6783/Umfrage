@@ -22,7 +22,7 @@
             else
             {
 
-                let client = new Client('http://192.168.178.23:5134')
+                let client = new Client()
                 let resObj;
                 window.isBusy(true);
 
@@ -30,7 +30,7 @@
                     title: title.value,
                     description: description.value,
                     answers: answers.value.map(a => new Answer({ text:a.text })),
-                    apiKey: 'test'
+                    apiKey: 'ValidApiKey'
                 }))
                     .then(r => resObj = r)
                     .catch(e => resObj = { success: false, errorMessage: e.message });
