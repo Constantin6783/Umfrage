@@ -227,6 +227,48 @@ export class Client {
         }
         return Promise.resolve<BaseResponse>(null as any);
     }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    pollStatistic(body: GetPollRequest | undefined): Promise<PollStatisticResponse> {
+        let url_ = this.baseUrl + "/api/Polls/PollStatistic";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "text/plain"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processPollStatistic(_response);
+        });
+    }
+
+    protected processPollStatistic(response: Response): Promise<PollStatisticResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = PollStatisticResponse.fromJS(resultData200);
+                return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<PollStatisticResponse>(null as any);
+    }
 }
 
 export class Answer implements IAnswer {
@@ -389,7 +431,7 @@ export class CreatePollRequest implements ICreatePollRequest {
     apiKey?: string | undefined;
     title?: string | undefined;
     description?: string | undefined;
-    answers?: Answer[] | undefined;
+    questions?: Question[] | undefined;
 
     constructor(data?: ICreatePollRequest) {
         if (data) {
@@ -405,10 +447,10 @@ export class CreatePollRequest implements ICreatePollRequest {
             this.apiKey = _data["apiKey"];
             this.title = _data["title"];
             this.description = _data["description"];
-            if (Array.isArray(_data["answers"])) {
-                this.answers = [] as any;
-                for (let item of _data["answers"])
-                    this.answers!.push(Answer.fromJS(item));
+            if (Array.isArray(_data["questions"])) {
+                this.questions = [] as any;
+                for (let item of _data["questions"])
+                    this.questions!.push(Question.fromJS(item));
             }
         }
     }
@@ -425,10 +467,10 @@ export class CreatePollRequest implements ICreatePollRequest {
         data["apiKey"] = this.apiKey;
         data["title"] = this.title;
         data["description"] = this.description;
-        if (Array.isArray(this.answers)) {
-            data["answers"] = [];
-            for (let item of this.answers)
-                data["answers"].push(item.toJSON());
+        if (Array.isArray(this.questions)) {
+            data["questions"] = [];
+            for (let item of this.questions)
+                data["questions"].push(item.toJSON());
         }
         return data;
     }
@@ -438,7 +480,7 @@ export interface ICreatePollRequest {
     apiKey?: string | undefined;
     title?: string | undefined;
     description?: string | undefined;
-    answers?: Answer[] | undefined;
+    questions?: Question[] | undefined;
 }
 
 export class DeletePollRequest implements IDeletePollRequest {
@@ -681,6 +723,66 @@ export interface IPoll {
     ownedByUser?: boolean;
 }
 
+export class PollStatisticResponse implements IPollStatisticResponse {
+    success?: boolean;
+    errorMessage?: string | undefined;
+    pollTitle?: string | undefined;
+    pollDescription?: string | undefined;
+    questions?: UserQuestion[] | undefined;
+
+    constructor(data?: IPollStatisticResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.success = _data["success"];
+            this.errorMessage = _data["errorMessage"];
+            this.pollTitle = _data["pollTitle"];
+            this.pollDescription = _data["pollDescription"];
+            if (Array.isArray(_data["questions"])) {
+                this.questions = [] as any;
+                for (let item of _data["questions"])
+                    this.questions!.push(UserQuestion.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): PollStatisticResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new PollStatisticResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["success"] = this.success;
+        data["errorMessage"] = this.errorMessage;
+        data["pollTitle"] = this.pollTitle;
+        data["pollDescription"] = this.pollDescription;
+        if (Array.isArray(this.questions)) {
+            data["questions"] = [];
+            for (let item of this.questions)
+                data["questions"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IPollStatisticResponse {
+    success?: boolean;
+    errorMessage?: string | undefined;
+    pollTitle?: string | undefined;
+    pollDescription?: string | undefined;
+    questions?: UserQuestion[] | undefined;
+}
+
 export class ProcessPollRequest implements IProcessPollRequest {
     apiKey?: string | undefined;
     pollId?: number;
@@ -783,6 +885,94 @@ export interface IQuestion {
     questionId?: number;
     title?: string | undefined;
     answers?: Answer[] | undefined;
+}
+
+export class UserQuestion implements IUserQuestion {
+    question?: string | undefined;
+    answers?: UserQuestionAnswer[] | undefined;
+
+    constructor(data?: IUserQuestion) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.question = _data["question"];
+            if (Array.isArray(_data["answers"])) {
+                this.answers = [] as any;
+                for (let item of _data["answers"])
+                    this.answers!.push(UserQuestionAnswer.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): UserQuestion {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserQuestion();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["question"] = this.question;
+        if (Array.isArray(this.answers)) {
+            data["answers"] = [];
+            for (let item of this.answers)
+                data["answers"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IUserQuestion {
+    question?: string | undefined;
+    answers?: UserQuestionAnswer[] | undefined;
+}
+
+export class UserQuestionAnswer implements IUserQuestionAnswer {
+    answer?: string | undefined;
+    count?: number;
+
+    constructor(data?: IUserQuestionAnswer) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.answer = _data["answer"];
+            this.count = _data["count"];
+        }
+    }
+
+    static fromJS(data: any): UserQuestionAnswer {
+        data = typeof data === 'object' ? data : {};
+        let result = new UserQuestionAnswer();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["answer"] = this.answer;
+        data["count"] = this.count;
+        return data;
+    }
+}
+
+export interface IUserQuestionAnswer {
+    answer?: string | undefined;
+    count?: number;
 }
 
 export class ApiException extends Error {

@@ -2,11 +2,13 @@
     import { onMounted, resolveComponent, ref, createBlock, getCurrentInstance } from "vue";
     import CreatePollDialog from './CreatePollDialog.vue'
     import ProcessPollDialog from './ProcessPollDialog.vue'
+    import StatisticsPollDialog from './StatisticsPollDialog.vue'
     import Swal from 'sweetalert2'
     import { Client, BaseRequest, DeletePollRequest } from '../service/Client'
     const parent = getCurrentInstance().parent;
     const createPoll = ref(false);
     const processPollId = ref(-1);
+    const statisticsPollId = ref(-1);
     const polls = ref([])
 
 
@@ -80,8 +82,9 @@
 </script>
 
 <template>
-    <div class="row">
+    <div class="row my-3">
         <button class="btn btn-primary col-lg-1" @click="addPoll">Neue Umfrage</button>
+        <button class="btn btn-primary col-lg-1 mx-3" @click="updatePolls">Aktualisieren</button>
     </div>
     <div class="row">
         <table class="table">
@@ -97,7 +100,7 @@
                     <td>{{poll.description}}</td>
                     <td v-if="!poll.doneByUser" width="150px"><button class="btn btn-primary btn-process" @click="onProcessPoll(poll.pollId)">Teilnehmen</button></td>
                     <td v-else="" width="150px"><button class="btn btn-primary btn-processed disabled">Teilgenommen</button></td>
-                    <td width="100px"><button class="btn btn-primary">Statistiken</button></td>
+                    <td width="100px"><button class="btn btn-primary" @click="statisticsPollId = poll.pollId">Statistiken</button></td>
                     <td width="100px"><button v-if="poll.ownedByUser" class="btn btn-danger warning" @click="deletePoll(poll)">🗑</button></td>
                 </tr>
             </tbody>
@@ -106,6 +109,7 @@
     </div>
     <CreatePollDialog v-if="createPoll" @onClosed="addPoll" />
     <ProcessPollDialog v-if="processPollId > 0" @onClosed="onProcessPoll" :pollid="processPollId" />
+    <StatisticsPollDialog v-if="statisticsPollId > 0" @onClosed="statisticsPollId = -1" :pollid="statisticsPollId" />
 </template>
 
 

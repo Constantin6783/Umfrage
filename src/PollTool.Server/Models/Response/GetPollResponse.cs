@@ -4,7 +4,7 @@ namespace PollTool.Server.Models.Response
 {
     public class GetPollResponse:BaseResponse
     {
-        public Poll Poll { get; set; }
-        public List<Question> Questions { get; set; }
+        public Poll Poll { get; set; } = new();
+        public List<Question> Questions { get; set; } = new();
     }
 }

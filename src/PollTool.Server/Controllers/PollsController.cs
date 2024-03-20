@@ -9,6 +9,7 @@ using DbQuestion = PollTool.Server.Models.Database.Question;
 using ApiAnswer = PollTool.Server.Models.Api.Answer;
 using DbAnswer = PollTool.Server.Models.Database.Answer;
 using PollTool.Server.Models.Database;
+using PollTool.Server.Models.Api;
 
 namespace PollTool.Server.Controllers
 {
@@ -16,6 +17,8 @@ namespace PollTool.Server.Controllers
     [ApiController]
     public class PollsController : ControllerBase
     {
+        private const string CRITIICAL_ERROR = "Critical error, please contact the administrator";
+
         private readonly PollContext _context;
         private readonly ILogger _logger;
 
@@ -59,7 +62,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(GetPolls));
-                response.ErrorMessage = "Critical error, please contact the administrator";
+                response.ErrorMessage = CRITIICAL_ERROR;
             }
 
             return response;
@@ -84,27 +87,29 @@ namespace PollTool.Server.Controllers
                 }).Entity;
                 await _context.SaveChangesAsync();
 
-                var question = _context.Questions.Add(new DbQuestion
+
+                foreach (var apiQuestion in request.Questions)
                 {
-                    PollId = poll.PollId,
-                    Title = request.Title,
-                }).Entity;
+                    var question = _context.Questions.Add(new DbQuestion
+                    {
+                        PollId = poll.PollId,
+                        Title = apiQuestion.Title
+                    }).Entity;
+                    await _context.SaveChangesAsync();
 
-                await _context.SaveChangesAsync();
-
-                _context.Answers.AddRange(request.Answers.Select(a => new DbAnswer
-                {
-                    QuestionId = question.QuestionId,
-                    Text = a.Text
-                }));
-
-                await _context.SaveChangesAsync();
+                    _context.Answers.AddRange(apiQuestion.Answers.Select(a => new DbAnswer
+                    {
+                        QuestionId = question.QuestionId,
+                        Text = a.Text
+                    }));
+                    await _context.SaveChangesAsync();
+                }
                 response.Success = true;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(CreatePoll));
-                response.ErrorMessage = "Critical error, please contact the administrator";
+                response.ErrorMessage = CRITIICAL_ERROR;
             }
 
             return response;
@@ -115,26 +120,33 @@ namespace PollTool.Server.Controllers
         public async Task<ActionResult<BaseResponse>> DeletePoll([FromBody] DeletePollRequest request)
         {
             if (!request.IsValid()) return BadRequest();
-
-            var ip = CurrentUserID;
-            if (await _context.Polls.FindAsync(request.PollId) is DbPoll foundPoll)
+            try
             {
-                if (foundPoll.CreatedBy != ip) return Unauthorized();
-                var queryQuestions = _context.Questions.Where(q => q.PollId == request.PollId);
 
-                _context.Answers.RemoveRange(_context.Answers.Join(queryQuestions, a => a.QuestionId, q => q.QuestionId, (ar, aq) => ar).ToList());
-                _context.UserAnswers.RemoveRange(_context.UserAnswers.Join(queryQuestions, ua => ua.QuestionId, q => q.QuestionId, (uar, aq) => uar).ToList());
-                _context.Questions.RemoveRange(queryQuestions.ToList());
-                _context.Polls.Remove(foundPoll);
-                await _context.SaveChangesAsync();
+                var uid = CurrentUserID;
+                if (await _context.Polls.FindAsync(request.PollId) is DbPoll foundPoll)
+                {
+                    if (foundPoll.CreatedBy != uid) return Unauthorized();
+                    var queryQuestions = _context.Questions.Where(q => q.PollId == request.PollId);
 
-                return new BaseResponse { Success = true };
+                    _context.Answers.RemoveRange(_context.Answers.Join(queryQuestions, a => a.QuestionId, q => q.QuestionId, (ar, aq) => ar).ToList());
+                    _context.UserAnswers.RemoveRange(_context.UserAnswers.Join(queryQuestions, ua => ua.QuestionId, q => q.QuestionId, (uar, aq) => uar).ToList());
+                    _context.Questions.RemoveRange(queryQuestions.ToList());
+                    _context.Polls.Remove(foundPoll);
+                    await _context.SaveChangesAsync();
 
+                    return new BaseResponse { Success = true };
+
+                }
+
+                return new BaseResponse { ErrorMessage = "Poll not found!" };
             }
-
-            return new BaseResponse { ErrorMessage = "Poll not found!" };
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(DeletePoll));
+                return new BaseResponse { ErrorMessage = CRITIICAL_ERROR };
+            }
         }
-
 
         // POST: api/Polls/GetPoll
         [HttpPost]
@@ -178,7 +190,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(GetPoll));
-                return new GetPollResponse { ErrorMessage = "Poll not found!" };
+                return new GetPollResponse { ErrorMessage = CRITIICAL_ERROR };
             }
         }
 
@@ -205,8 +217,46 @@ namespace PollTool.Server.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, nameof(GetPoll));
-                return new BaseResponse { ErrorMessage = "Poll not found!" };
+                _logger.LogError(ex, nameof(ProcessPoll));
+                return new BaseResponse { ErrorMessage = CRITIICAL_ERROR };
+            }
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<PollStatisticResponse>> PollStatistic([FromBody] GetPollRequest request)
+        {
+            if (!request.IsValid()) return BadRequest();
+
+            try
+            {
+                var response = await _context.Polls.Where(p => p.PollId == request.PollId).Select(p => new PollStatisticResponse
+                {
+                    PollDescription = p.Description,
+                    PollTitle = p.Title,
+                    Questions = _context.Questions.Where(q => q.PollId == p.PollId)
+                    .Select(q => new UserQuestion
+                    {
+                        Question = q.Title,
+                        Answers = _context.Answers.Where(a => a.QuestionId == q.QuestionId).Select(a => new UserQuestionAnswer
+                        {
+                            Answer = a.Text,
+                            Count = _context.UserAnswers.Count(ua => ua.AnswerId == a.AnswerId)
+                        }).ToList()
+                    }).ToList()
+                }).FirstOrDefaultAsync();
+
+                if (response != null)
+                {
+                    response.Success = true;
+                    return response;
+                }
+
+                return new PollStatisticResponse { ErrorMessage = "Poll not found!" };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(PollStatistic));
+                return new PollStatisticResponse { ErrorMessage = CRITIICAL_ERROR };
             }
         }
 
