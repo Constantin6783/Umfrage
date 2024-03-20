@@ -1,8 +1,13 @@
 <script setup>
     import { onMounted, resolveComponent, ref, defineComponent } from "vue";
     import PollOverview from './components/PollOverview.vue'
-    const isBusy = ref(true);
-    window.isBusy = (value) => isBusy.value = value;
+    const props = defineProps(
+        {
+            isBusy: {
+                type: Boolean,
+                default: false
+            }
+        });
 </script>
 
 <template>
@@ -24,7 +29,7 @@
     </nav>
     <div id="content" class="mx-5">
         <PollOverview ref="pollOverview" />
-        <div id="busy-shadow" v-if="isBusy">
+        <div id="busy-shadow" v-if="props.isBusy">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>

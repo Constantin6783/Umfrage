@@ -2,6 +2,6 @@
 {
     public class DeletePollRequest:BaseRequest
     {
-        public int PollID { get; set; }
+        public int PollId { get; set; }
     }
 }

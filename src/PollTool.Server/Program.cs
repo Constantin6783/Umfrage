@@ -10,15 +10,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<PollContext>();
-builder.Services.AddCors(options =>
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
 {
-    options.AddPolicy("MyPolicy",
-        policy =>
-        {
-            policy.AllowAnyHeader().AllowAnyMethod()
-            .SetIsOriginAllowed(o => o.Contains(":8080"));
-        });
+    options.Cookie.Name = ".Polltool.Session";
+    options.IdleTimeout = TimeSpan.FromDays(60);
+    options.Cookie.IsEssential = true;
 });
+
 
 builder.Logging.ClearProviders(); 
 builder.Logging.AddConsole();
@@ -33,8 +32,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
+app.UseSession();
 app.UseAuthorization();
-app.UseCors("MyPolicy");
 app.MapControllers();
-
 app.Run();

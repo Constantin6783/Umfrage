@@ -15,7 +15,7 @@ export class Client {
 
     constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
         this.http = http ? http : window as any;
-        this.baseUrl = baseUrl ?? `http://${window.location.hostname}:8081`;
+        this.baseUrl = baseUrl ?? `http://${window.location.hostname}`;
     }
 
     /**
@@ -47,14 +47,14 @@ export class Client {
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = GetPollsResponse.fromJS(resultData200);
-            return result200;
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = GetPollsResponse.fromJS(resultData200);
+                return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
         return Promise.resolve<GetPollsResponse>(null as any);
@@ -64,7 +64,7 @@ export class Client {
      * @param body (optional) 
      * @return Success
      */
-    createPoll(body: CreatePollRequest | undefined): Promise<CreatePollResponse> {
+    createPoll(body: CreatePollRequest | undefined): Promise<BaseResponse> {
         let url_ = this.baseUrl + "/api/Polls/CreatePoll";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -84,22 +84,22 @@ export class Client {
         });
     }
 
-    protected processCreatePoll(response: Response): Promise<CreatePollResponse> {
+    protected processCreatePoll(response: Response): Promise<BaseResponse> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = CreatePollResponse.fromJS(resultData200);
-            return result200;
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = BaseResponse.fromJS(resultData200);
+                return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<CreatePollResponse>(null as any);
+        return Promise.resolve<BaseResponse>(null as any);
     }
 
     /**
@@ -131,14 +131,14 @@ export class Client {
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = BaseResponse.fromJS(resultData200);
-            return result200;
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = BaseResponse.fromJS(resultData200);
+                return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
         return Promise.resolve<BaseResponse>(null as any);
@@ -173,24 +173,65 @@ export class Client {
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = GetPollResponse.fromJS(resultData200);
-            return result200;
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = GetPollResponse.fromJS(resultData200);
+                return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
         return Promise.resolve<GetPollResponse>(null as any);
+    }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    processPoll(body: ProcessPollRequest | undefined): Promise<BaseResponse> {
+        let url_ = this.baseUrl + "/api/Polls/ProcessPoll";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "text/plain"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processProcessPoll(_response);
+        });
+    }
+
+    protected processProcessPoll(response: Response): Promise<BaseResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = BaseResponse.fromJS(resultData200);
+                return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<BaseResponse>(null as any);
     }
 }
 
 export class Answer implements IAnswer {
     text?: string | undefined;
-    selected?: boolean;
-    answerID?: number;
+    answerId?: number;
 
     constructor(data?: IAnswer) {
         if (data) {
@@ -204,8 +245,7 @@ export class Answer implements IAnswer {
     init(_data?: any) {
         if (_data) {
             this.text = _data["text"];
-            this.selected = _data["selected"];
-            this.answerID = _data["answerID"];
+            this.answerId = _data["answerId"];
         }
     }
 
@@ -219,16 +259,54 @@ export class Answer implements IAnswer {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["text"] = this.text;
-        data["selected"] = this.selected;
-        data["answerID"] = this.answerID;
+        data["answerId"] = this.answerId;
         return data;
     }
 }
 
 export interface IAnswer {
     text?: string | undefined;
-    selected?: boolean;
-    answerID?: number;
+    answerId?: number;
+}
+
+export class AnsweredQuestion implements IAnsweredQuestion {
+    questionId?: number;
+    selectedAnswer?: number;
+
+    constructor(data?: IAnsweredQuestion) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.questionId = _data["questionId"];
+            this.selectedAnswer = _data["selectedAnswer"];
+        }
+    }
+
+    static fromJS(data: any): AnsweredQuestion {
+        data = typeof data === 'object' ? data : {};
+        let result = new AnsweredQuestion();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["questionId"] = this.questionId;
+        data["selectedAnswer"] = this.selectedAnswer;
+        return data;
+    }
+}
+
+export interface IAnsweredQuestion {
+    questionId?: number;
+    selectedAnswer?: number;
 }
 
 export class BaseRequest implements IBaseRequest {
@@ -363,49 +441,9 @@ export interface ICreatePollRequest {
     answers?: Answer[] | undefined;
 }
 
-export class CreatePollResponse implements ICreatePollResponse {
-    success?: boolean;
-    errorMessage?: string | undefined;
-
-    constructor(data?: ICreatePollResponse) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.success = _data["success"];
-            this.errorMessage = _data["errorMessage"];
-        }
-    }
-
-    static fromJS(data: any): CreatePollResponse {
-        data = typeof data === 'object' ? data : {};
-        let result = new CreatePollResponse();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["success"] = this.success;
-        data["errorMessage"] = this.errorMessage;
-        return data;
-    }
-}
-
-export interface ICreatePollResponse {
-    success?: boolean;
-    errorMessage?: string | undefined;
-}
-
 export class DeletePollRequest implements IDeletePollRequest {
     apiKey?: string | undefined;
-    pollID?: number;
+    pollId?: number;
 
     constructor(data?: IDeletePollRequest) {
         if (data) {
@@ -419,7 +457,7 @@ export class DeletePollRequest implements IDeletePollRequest {
     init(_data?: any) {
         if (_data) {
             this.apiKey = _data["apiKey"];
-            this.pollID = _data["pollID"];
+            this.pollId = _data["pollId"];
         }
     }
 
@@ -433,19 +471,19 @@ export class DeletePollRequest implements IDeletePollRequest {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["apiKey"] = this.apiKey;
-        data["pollID"] = this.pollID;
+        data["pollId"] = this.pollId;
         return data;
     }
 }
 
 export interface IDeletePollRequest {
     apiKey?: string | undefined;
-    pollID?: number;
+    pollId?: number;
 }
 
 export class GetPollRequest implements IGetPollRequest {
     apiKey?: string | undefined;
-    pollID?: number;
+    pollId?: number;
 
     constructor(data?: IGetPollRequest) {
         if (data) {
@@ -459,7 +497,7 @@ export class GetPollRequest implements IGetPollRequest {
     init(_data?: any) {
         if (_data) {
             this.apiKey = _data["apiKey"];
-            this.pollID = _data["pollID"];
+            this.pollId = _data["pollId"];
         }
     }
 
@@ -473,14 +511,14 @@ export class GetPollRequest implements IGetPollRequest {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["apiKey"] = this.apiKey;
-        data["pollID"] = this.pollID;
+        data["pollId"] = this.pollId;
         return data;
     }
 }
 
 export interface IGetPollRequest {
     apiKey?: string | undefined;
-    pollID?: number;
+    pollId?: number;
 }
 
 export class GetPollResponse implements IGetPollResponse {
@@ -641,6 +679,58 @@ export interface IPoll {
     description?: string | undefined;
     doneByUser?: boolean;
     ownedByUser?: boolean;
+}
+
+export class ProcessPollRequest implements IProcessPollRequest {
+    apiKey?: string | undefined;
+    pollId?: number;
+    answereds?: AnsweredQuestion[] | undefined;
+
+    constructor(data?: IProcessPollRequest) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.apiKey = _data["apiKey"];
+            this.pollId = _data["pollId"];
+            if (Array.isArray(_data["answereds"])) {
+                this.answereds = [] as any;
+                for (let item of _data["answereds"])
+                    this.answereds!.push(AnsweredQuestion.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): ProcessPollRequest {
+        data = typeof data === 'object' ? data : {};
+        let result = new ProcessPollRequest();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["apiKey"] = this.apiKey;
+        data["pollId"] = this.pollId;
+        if (Array.isArray(this.answereds)) {
+            data["answereds"] = [];
+            for (let item of this.answereds)
+                data["answereds"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IProcessPollRequest {
+    apiKey?: string | undefined;
+    pollId?: number;
+    answereds?: AnsweredQuestion[] | undefined;
 }
 
 export class Question implements IQuestion {

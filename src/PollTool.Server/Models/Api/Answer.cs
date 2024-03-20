@@ -3,7 +3,6 @@
     public class Answer
     {
         public string Text { get; set; } = null!;
-        public bool Selected { get; set; }
-        public int AnswerID { get; set; }
+        public int AnswerId { get; set; }
     }
 }

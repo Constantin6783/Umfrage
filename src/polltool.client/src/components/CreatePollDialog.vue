@@ -1,10 +1,11 @@
 ﻿
 <script setup >
-    import { onMounted, ref } from "vue";
+    import { onMounted, ref, getCurrentInstance } from "vue";
     import { Answer, Client, CreatePollRequest } from '../service/Client'
     import { Modal } from 'bootstrap';
 
     const emit = defineEmits(['onClosed'])
+    const app = getCurrentInstance().parent.parent;
     const title = ref('');
     const description = ref('');
     const answers = ref([]);
@@ -24,18 +25,18 @@
 
                 let client = new Client()
                 let resObj;
-                window.isBusy(true);
-
+                app.props.isBusy = true;
+     
                 await client.createPoll(new CreatePollRequest({
                     title: title.value,
                     description: description.value,
-                    answers: answers.value.map(a => new Answer({ text:a.text })),
+                    answers: answers.value.map(a => new Answer({ text: a.text })),
                     apiKey: 'ValidApiKey'
                 }))
                     .then(r => resObj = r)
                     .catch(e => resObj = { success: false, errorMessage: e.message });
 
-                window.isBusy(false);
+                app.props.isBusy = false;
 
                 if (!resObj.success) error = resObj.errorMessage;
             }
