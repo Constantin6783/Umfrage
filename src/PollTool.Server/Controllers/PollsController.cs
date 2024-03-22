@@ -10,6 +10,7 @@ using ApiAnswer = PollTool.Server.Models.Api.Answer;
 using DbAnswer = PollTool.Server.Models.Database.Answer;
 using PollTool.Server.Models.Database;
 using PollTool.Server.Models.Api;
+using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace PollTool.Server.Controllers
 {
@@ -22,7 +23,7 @@ namespace PollTool.Server.Controllers
         private readonly PollContext _context;
         private readonly ILogger _logger;
 
-        public string CurrentUserID
+        public string CurrentUserId
         {
             get
             {
@@ -46,7 +47,7 @@ namespace PollTool.Server.Controllers
             var response = new GetPollsResponse();
             try
             {
-                var uid = CurrentUserID;
+                var uid = CurrentUserId;
                 var polls = await _context.Polls.Select(p => new ApiPoll
                 {
                     Title = p.Title,
@@ -54,6 +55,8 @@ namespace PollTool.Server.Controllers
                     PollId = p.PollId,
                     DoneByUser = _context.Questions.Where(q => q.PollId == p.PollId)
                                                    .Any(q => _context.UserAnswers.Any(ua => ua.QuestionId == q.QuestionId && ua.AnsweredBy == uid)),
+                    HasAnswers = _context.Questions.Where(q => q.PollId == p.PollId)
+                                                   .Any(q => _context.UserAnswers.Any(ua => ua.QuestionId == q.QuestionId)),
                     OwnedByUser = p.CreatedBy == uid
                 }).ToListAsync();
                 response.Polls = polls;
@@ -70,23 +73,49 @@ namespace PollTool.Server.Controllers
 
         // POST: api/CreatePoll
         [HttpPost]
-        public async Task<ActionResult<BaseResponse>> CreatePoll([FromBody] CreatePollRequest request)
+        public async Task<ActionResult<BaseResponse>> CreatePoll([FromBody] WritePollRequest request)
         {
             if (!request.IsValid()) return BadRequest();
             var response = new BaseResponse();
             try
             {
-                if (_context.Polls.Any(p => p.Title == request.Title))
-                    return new BaseResponse { ErrorMessage = $"Umfrage '{request.Title}' existiert bereits!" };
-                var uid = CurrentUserID;
-                var poll = _context.Polls.Add(new DbPoll
-                {
-                    Title = request.Title,
-                    Description = request.Description,
-                    CreatedBy = uid
-                }).Entity;
+                if (_context.Polls.Any(p => p.Title == request.Title && p.PollId != request.PollId))
+                    return new BaseResponse { ErrorMessage = $"Poll '{request.Title}' already exists!" };
+
+                if (!request.Questions.Any())
+                    return new BaseResponse { ErrorMessage = $"At least one question is required!" };
+
+                if (request.Questions.Any(q => q.Answers.Count < 2))
+                    return new BaseResponse { ErrorMessage = $"At least two answers are required per question!" };
+
+                var uid = CurrentUserId;
+
+                DbPoll poll = null;
+                if (request.PollId > 0 && _context.Polls.FirstOrDefault(p => p.PollId == request.PollId && p.CreatedBy == uid) is DbPoll tmpPoll)
+                    poll = tmpPoll;
+                else
+                    poll = _context.Polls.Add(new DbPoll { CreatedBy = uid }).Entity;
+
+                poll.Title = request.Title;
+                poll.Description = request.Description;
+
                 await _context.SaveChangesAsync();
 
+
+                //var newQuestions = 
+                if (request.PollId > 0)
+                {
+                    var removableQuestions = await _context.Questions.Where(q => q.PollId == request.PollId)
+                        .Select(q => new { Question = q, Answers = _context.Answers.Where(a => a.QuestionId == q.QuestionId).ToList() })
+                        .ToListAsync();
+
+                    foreach (var item in removableQuestions)
+                    {
+                        _context.Questions.Remove(item.Question);
+                        _context.Answers.RemoveRange(item.Answers);
+                    }
+                    await _context.SaveChangesAsync();
+                }
 
                 foreach (var apiQuestion in request.Questions)
                 {
@@ -123,7 +152,7 @@ namespace PollTool.Server.Controllers
             try
             {
 
-                var uid = CurrentUserID;
+                var uid = CurrentUserId;
                 if (await _context.Polls.FindAsync(request.PollId) is DbPoll foundPoll)
                 {
                     if (foundPoll.CreatedBy != uid) return Unauthorized();
@@ -155,7 +184,7 @@ namespace PollTool.Server.Controllers
             if (!request.IsValid()) return BadRequest();
             try
             {
-                var uid = CurrentUserID;
+                var uid = CurrentUserId;
 
                 if (await PollDoneByUser(request.PollId, uid))
                     return new GetPollResponse { Success = false, ErrorMessage = $"Already processed!" };
@@ -202,10 +231,35 @@ namespace PollTool.Server.Controllers
 
             try
             {
-                var uid = CurrentUserID;
+                var uid = CurrentUserId;
+                var questionIds = request.Answereds.Select(a => a.QuestionId).ToList();
+
+                if (questionIds.Count > questionIds.Distinct().Count())
+                    return new BaseResponse { ErrorMessage = $"Questions may only be answered once!" };
+
+                if (!await _context.Polls.AnyAsync(p => p.PollId == request.PollId))
+                    return new BaseResponse { ErrorMessage = $"Poll not found!" };
+
+                if (await _context.Questions.AnyAsync(q => q.PollId == request.PollId && !questionIds.Contains(q.QuestionId)))
+                    return new BaseResponse { ErrorMessage = $"Questions not matching Poll!" };
+
+                var questionPossibleAnswers = await _context.Questions.Where(q => questionIds.Contains(q.QuestionId))
+                    .Select(q => new
+                    {
+                        q.QuestionId,
+                        PossibleAnswerIds = _context.Answers.Where(a => a.QuestionId == q.QuestionId).Select(a => a.AnswerId).ToList(),
+                    }).ToListAsync();
+
+                foreach (var questionAnswers in questionPossibleAnswers)
+                {
+                    if (request.Answereds.Single(a => a.QuestionId == questionAnswers.QuestionId) is AnsweredQuestion aq &&
+                       !questionAnswers.PossibleAnswerIds.Contains(aq.SelectedAnswer))
+                        return new BaseResponse { ErrorMessage = $"Answers not matching Questions!" };
+                }
+
                 if (await PollDoneByUser(request.PollId, uid)) return new BaseResponse { Success = false, ErrorMessage = $"Already processed!" };
 
-                _context.UserAnswers.AddRange(request.Answereds.Select(a => new UserAnswer
+                _context.UserAnswers.AddRange(request.Answereds.Where(a => questionPossibleAnswers.Any(q => q.QuestionId == a.QuestionId)).Select(a => new UserAnswer
                 {
                     AnsweredBy = uid,
                     AnswerId = a.SelectedAnswer,
@@ -257,6 +311,51 @@ namespace PollTool.Server.Controllers
             {
                 _logger.LogError(ex, nameof(PollStatistic));
                 return new PollStatisticResponse { ErrorMessage = CRITIICAL_ERROR };
+            }
+        }
+
+
+        [HttpPost]
+        public async Task<ActionResult<EditPollResponse>> BeginEditPoll([FromBody] GetPollRequest request)
+        {
+            if (!request.IsValid()) return BadRequest();
+
+            try
+            {
+                var uid = CurrentUserId;
+
+                if (await _context.UserAnswers.AnyAsync(ua => _context.Questions.Where(q => q.PollId == request.PollId).Any(q => q.QuestionId == ua.QuestionId)))
+                    return new EditPollResponse { ErrorMessage = "Poll already answered, editing not possible!" };
+
+                var response = await _context.Polls.Where(p => p.PollId == request.PollId && p.CreatedBy == uid).Select(p => new EditPollResponse
+                {
+                    PollId = p.PollId,
+                    Description = p.Description,
+                    Title = p.Title,
+                    Questions = _context.Questions.Where(q => q.PollId == p.PollId)
+                    .Select(q => new ApiQuestion
+                    {
+                        Title = q.Title,
+                        Answers = _context.Answers.Where(a => a.QuestionId == q.QuestionId).Select(a => new ApiAnswer
+                        {
+                            AnswerId = a.AnswerId,
+                            Text = a.Text
+                        }).ToList()
+                    }).ToList()
+                }).FirstOrDefaultAsync();
+
+                if (response != null)
+                {
+                    response.Success = true;
+                    return response;
+                }
+
+                return new EditPollResponse { ErrorMessage = "Poll not found!" };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, nameof(PollStatistic));
+                return new EditPollResponse { ErrorMessage = CRITIICAL_ERROR };
             }
         }
 

@@ -64,7 +64,7 @@ export class Client {
      * @param body (optional) 
      * @return Success
      */
-    createPoll(body: CreatePollRequest | undefined): Promise<BaseResponse> {
+    createPoll(body: WritePollRequest | undefined): Promise<BaseResponse> {
         let url_ = this.baseUrl + "/api/Polls/CreatePoll";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -269,6 +269,48 @@ export class Client {
         }
         return Promise.resolve<PollStatisticResponse>(null as any);
     }
+
+    /**
+     * @param body (optional) 
+     * @return Success
+     */
+    beginEditPoll(body: GetPollRequest | undefined): Promise<EditPollResponse> {
+        let url_ = this.baseUrl + "/api/Polls/BeginEditPoll";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(body);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "text/plain"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processBeginEditPoll(_response);
+        });
+    }
+
+    protected processBeginEditPoll(response: Response): Promise<EditPollResponse> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+                let result200: any = null;
+                let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+                result200 = EditPollResponse.fromJS(resultData200);
+                return result200;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+                return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<EditPollResponse>(null as any);
+    }
 }
 
 export class Answer implements IAnswer {
@@ -427,62 +469,6 @@ export interface IBaseResponse {
     errorMessage?: string | undefined;
 }
 
-export class CreatePollRequest implements ICreatePollRequest {
-    apiKey?: string | undefined;
-    title?: string | undefined;
-    description?: string | undefined;
-    questions?: Question[] | undefined;
-
-    constructor(data?: ICreatePollRequest) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.apiKey = _data["apiKey"];
-            this.title = _data["title"];
-            this.description = _data["description"];
-            if (Array.isArray(_data["questions"])) {
-                this.questions = [] as any;
-                for (let item of _data["questions"])
-                    this.questions!.push(Question.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): CreatePollRequest {
-        data = typeof data === 'object' ? data : {};
-        let result = new CreatePollRequest();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["apiKey"] = this.apiKey;
-        data["title"] = this.title;
-        data["description"] = this.description;
-        if (Array.isArray(this.questions)) {
-            data["questions"] = [];
-            for (let item of this.questions)
-                data["questions"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface ICreatePollRequest {
-    apiKey?: string | undefined;
-    title?: string | undefined;
-    description?: string | undefined;
-    questions?: Question[] | undefined;
-}
-
 export class DeletePollRequest implements IDeletePollRequest {
     apiKey?: string | undefined;
     pollId?: number;
@@ -521,6 +507,70 @@ export class DeletePollRequest implements IDeletePollRequest {
 export interface IDeletePollRequest {
     apiKey?: string | undefined;
     pollId?: number;
+}
+
+export class EditPollResponse implements IEditPollResponse {
+    success?: boolean;
+    errorMessage?: string | undefined;
+    pollId?: number;
+    title?: string | undefined;
+    description?: string | undefined;
+    questions?: Question[] | undefined;
+
+    constructor(data?: IEditPollResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.success = _data["success"];
+            this.errorMessage = _data["errorMessage"];
+            this.pollId = _data["pollId"];
+            this.title = _data["title"];
+            this.description = _data["description"];
+            if (Array.isArray(_data["questions"])) {
+                this.questions = [] as any;
+                for (let item of _data["questions"])
+                    this.questions!.push(Question.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): EditPollResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new EditPollResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["success"] = this.success;
+        data["errorMessage"] = this.errorMessage;
+        data["pollId"] = this.pollId;
+        data["title"] = this.title;
+        data["description"] = this.description;
+        if (Array.isArray(this.questions)) {
+            data["questions"] = [];
+            for (let item of this.questions)
+                data["questions"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IEditPollResponse {
+    success?: boolean;
+    errorMessage?: string | undefined;
+    pollId?: number;
+    title?: string | undefined;
+    description?: string | undefined;
+    questions?: Question[] | undefined;
 }
 
 export class GetPollRequest implements IGetPollRequest {
@@ -675,8 +725,9 @@ export class Poll implements IPoll {
     pollId?: number;
     title?: string | undefined;
     description?: string | undefined;
-    doneByUser?: boolean;
+    readonly doneByUser?: boolean;
     readonly ownedByUser?: boolean;
+    readonly hasAnswers?: boolean;
 
     constructor(data?: IPoll) {
         if (data) {
@@ -692,8 +743,9 @@ export class Poll implements IPoll {
             this.pollId = _data["pollId"];
             this.title = _data["title"];
             this.description = _data["description"];
-            this.doneByUser = _data["doneByUser"];
+            (<any>this).doneByUser = _data["doneByUser"];
             (<any>this).ownedByUser = _data["ownedByUser"];
+            (<any>this).hasAnswers = _data["hasAnswers"];
         }
     }
 
@@ -711,6 +763,7 @@ export class Poll implements IPoll {
         data["description"] = this.description;
         data["doneByUser"] = this.doneByUser;
         data["ownedByUser"] = this.ownedByUser;
+        data["hasAnswers"] = this.hasAnswers;
         return data;
     }
 }
@@ -721,6 +774,7 @@ export interface IPoll {
     description?: string | undefined;
     doneByUser?: boolean;
     ownedByUser?: boolean;
+    hasAnswers?: boolean;
 }
 
 export class PollStatisticResponse implements IPollStatisticResponse {
@@ -973,6 +1027,66 @@ export class UserQuestionAnswer implements IUserQuestionAnswer {
 export interface IUserQuestionAnswer {
     answer?: string | undefined;
     count?: number;
+}
+
+export class WritePollRequest implements IWritePollRequest {
+    apiKey?: string | undefined;
+    pollId?: number;
+    title?: string | undefined;
+    description?: string | undefined;
+    questions?: Question[] | undefined;
+
+    constructor(data?: IWritePollRequest) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.apiKey = _data["apiKey"];
+            this.pollId = _data["pollId"];
+            this.title = _data["title"];
+            this.description = _data["description"];
+            if (Array.isArray(_data["questions"])) {
+                this.questions = [] as any;
+                for (let item of _data["questions"])
+                    this.questions!.push(Question.fromJS(item));
+            }
+        }
+    }
+
+    static fromJS(data: any): WritePollRequest {
+        data = typeof data === 'object' ? data : {};
+        let result = new WritePollRequest();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["apiKey"] = this.apiKey;
+        data["pollId"] = this.pollId;
+        data["title"] = this.title;
+        data["description"] = this.description;
+        if (Array.isArray(this.questions)) {
+            data["questions"] = [];
+            for (let item of this.questions)
+                data["questions"].push(item.toJSON());
+        }
+        return data;
+    }
+}
+
+export interface IWritePollRequest {
+    apiKey?: string | undefined;
+    pollId?: number;
+    title?: string | undefined;
+    description?: string | undefined;
+    questions?: Question[] | undefined;
 }
 
 export class ApiException extends Error {

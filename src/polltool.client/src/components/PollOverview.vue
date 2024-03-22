@@ -1,20 +1,16 @@
 ﻿<script setup lang="ts">
-    import { onMounted, resolveComponent, ref, createBlock, getCurrentInstance } from "vue";
-    import CreatePollDialog from './CreatePollDialog.vue'
-    import ProcessPollDialog from './ProcessPollDialog.vue'
-    import StatisticsPollDialog from './StatisticsPollDialog.vue'
+    import { onMounted, ref, getCurrentInstance } from "vue";    
     import Swal from 'sweetalert2'
     import { Client, BaseRequest, DeletePollRequest } from '../service/Client'
     const parent = getCurrentInstance().parent;
     const createPoll = ref(false);
     const processPollId = ref(-1);
+    const editPollId = ref(-1);
     const statisticsPollId = ref(-1);
     const polls = ref([])
 
 
-    onMounted(() => {
-        updatePolls();
-    })
+    onMounted(updatePolls)
 
     async function updatePolls() {
 
@@ -33,13 +29,18 @@
         else alert(resObj.errorMessage);
     }
 
-    async function addPoll(refresh) {
-        createPoll.value = !createPoll.value;
+    function addPoll(refresh) {
         if (typeof refresh === 'boolean' && refresh)
             updatePolls();
+        else if(typeof refresh === 'object')
+            editPollId.value = refresh.pollId;
+
+
+
+        createPoll.value = !createPoll.value;
     }
 
-    async function onProcessPoll(param) {
+    function onProcessPoll(param) {
 
         if (typeof param === 'number') processPollId.value = param;
         else processPollId.value = -1;
@@ -98,16 +99,19 @@
                 <tr v-for="poll in polls">
                     <td>{{poll.title}}</td>
                     <td>{{poll.description}}</td>
-                    <td v-if="!poll.doneByUser" width="150px"><button class="btn btn-primary btn-process" @click="onProcessPoll(poll.pollId)">Teilnehmen</button></td>
+                    <td v-if="!poll.doneByUser" width="150px"><button class="btn btn-primary btn-process" @click="processPollId = poll.pollId">Teilnehmen</button></td>
                     <td v-else="" width="150px"><button class="btn btn-primary btn-processed disabled">Teilgenommen</button></td>
                     <td width="100px"><button class="btn btn-primary" @click="statisticsPollId = poll.pollId">Statistiken</button></td>
-                    <td width="100px"><button v-if="poll.ownedByUser" class="btn btn-danger warning" @click="deletePoll(poll)">🗑</button></td>
+                    <td width="130px">
+                        <button v-if="!poll.hasAnswers && poll.ownedByUser" class="btn btn-danger warning me-3" @click="addPoll(poll)">✎</button>
+                        <button v-if="poll.ownedByUser" class="btn btn-danger warning" @click="deletePoll(poll)">🗑</button>
+                    </td>                    
                 </tr>
             </tbody>
         </table>
 
     </div>
-    <CreatePollDialog v-if="createPoll" @onClosed="addPoll" />
+    <CreatePollDialog v-if="createPoll" :editPollId="editPollId" @onClosed="addPoll" />
     <ProcessPollDialog v-if="processPollId > 0" @onClosed="onProcessPoll" :pollid="processPollId" />
     <StatisticsPollDialog v-if="statisticsPollId > 0" @onClosed="statisticsPollId = -1" :pollid="statisticsPollId" />
 </template>

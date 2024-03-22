@@ -1,6 +1,5 @@
 <script setup>
     import { onMounted, resolveComponent, ref, defineComponent } from "vue";
-    import PollOverview from './components/PollOverview.vue'
     const props = defineProps(
         {
             isBusy: {
@@ -14,7 +13,7 @@
     <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#">Umfragetool</a>
+            <a class="navbar-brand" href="#" >Umfragetool</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -28,7 +27,7 @@
         </div>
     </nav>
     <div id="content" class="mx-5">
-        <PollOverview ref="pollOverview" />
+        <PollOverview  />
         <div id="busy-shadow" v-if="props.isBusy">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>

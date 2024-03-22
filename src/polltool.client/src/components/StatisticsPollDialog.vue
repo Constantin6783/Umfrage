@@ -18,7 +18,7 @@
 
     onMounted(async () => {
         let resObj: PollStatisticResponse;
-        let client = new Client();
+        let client = new Client(); 
         app.props.isBusy = true;
         await client.pollStatistic(new GetPollRequest({ apiKey: 'ValidApiKey', pollId: props.pollid }))
             .then(r => resObj = r)
@@ -51,11 +51,11 @@
                 <div class="modal-body">
                     <label>{{pollStatistics.pollDescription}}</label>
                     <div :class="pollStatistics.questions.indexOf(q)>0? 'mt-5' :''" v-for="q in pollStatistics.questions">
-                        {{q.question}}
+                        <h5>{{q.question}}</h5>
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
-                                    <th>Antwort</th>
+                                    <th width="100">Antwort</th>
                                     <th v-for="a in q.answers">
                                         {{a.answer}}
                                     </th>
@@ -63,7 +63,7 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Anzahl</td>
+                                    <td width="100">Anzahl</td>
                                     <td v-for="a in q.answers">
                                         {{a.count}}
                                     </td>

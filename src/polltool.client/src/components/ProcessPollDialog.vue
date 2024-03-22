@@ -13,15 +13,12 @@
         }
     })
 
-    const poll = reactive<GetPollResponse>(new GetPollResponse())
-    const pollRequest = reactive<ProcessPollRequest>(new ProcessPollRequest({ apiKey: "ValidApiKey", pollId: props.pollid, answereds: [] }));
-    const pollTitle = computed(() => poll.poll?.title ?? '');
-    const pollDescription = computed(() => poll.poll?.description ?? '');
+    //const poll = reactive<GetPollResponse>(new GetPollResponse())
+    const poll = ref<GetPollResponse>(new GetPollResponse())
+    const pollRequest = reactive<ProcessPollRequest>(new ProcessPollRequest({ apiKey: "ValidApiKey", pollId: props.pollid, answereds: [] }));    
     const allAnswered = computed(() => pollRequest.answereds.filter((p) => p.selectedAnswer == 0).length == 0)
     var myModal;
-    function isBusys(s) {
 
-    }
     onMounted(async () => {
         let resObj: GetPollResponse;
         let client = new Client();
@@ -32,8 +29,7 @@
         app.props.isBusy = false;
 
         if (resObj.success) {
-            poll.poll = resObj.poll;
-            poll.questions = resObj.questions;
+            poll.value = resObj
             pollRequest.answereds = resObj.questions.map(q => new AnsweredQuestion({ questionId: q.questionId, selectedAnswer: 0 }));
 
             myModal = new Modal(document.getElementById('dlg-create-poll'), { backdrop: false });
@@ -71,19 +67,21 @@
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">{{pollTitle}}</h5>
+                    <h5 class="modal-title">{{poll.poll?.title}}</h5>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label v-if="pollDescription" for="poll-description" class="form-label">{{pollDescription}}</label>
+                    <div>
+                        <label v-if="pollDescription" for="poll-description" class="form-label">{{poll.poll?.description}}</label>
 
-                        <div v-for="(question, idxQ) in poll.questions">
-                            <label>{{question.title}}</label>
-                            <div v-for="answer in question.answers" class="form-check">
-                                <input class="form-check-input" v-model="pollRequest.answereds[idxQ].selectedAnswer" :value="answer.answerId" type="radio" :name="'answerfor-' + question.questionId" :id="'answer-' + answer.answerId">
-                                <label class="form-check-label" :for="'answer-' + answer.answerId">
-                                    {{answer.text}}
-                                </label>
+                        <div :class="'card' + (idxQ > 0?' mt-3':'')" v-for="(question, idxQ) in poll.questions">
+                            <div class="card-body">
+                                <h5 class="card-title">{{question.title}}</h5>
+                                <p v-for="answer in question.answers" class="form-check">
+                                    <input class="form-check-input" v-model="pollRequest.answereds[idxQ].selectedAnswer" :value="answer.answerId" type="radio" :name="'answerfor-' + question.questionId" :id="'answer-' + answer.answerId">
+                                    <label class="form-check-label" :for="'answer-' + answer.answerId">
+                                        {{answer.text}}
+                                    </label>
+                                </p>
                             </div>
                         </div>
                     </div>

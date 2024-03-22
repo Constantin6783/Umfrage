@@ -1,15 +1,22 @@
 ﻿
 <script setup>
     import { onMounted, ref, getCurrentInstance } from "vue";
-    import { Answer, Client, CreatePollRequest, Question } from '../service/Client'
+    import { Answer, Client, WritePollRequest, Question } from '../service/Client'
     import { Modal } from 'bootstrap';
+    import Swal from 'sweetalert2'
 
     const emit = defineEmits(['onClosed'])
+    const props = defineProps({
+        editPollId:{
+            type:Number,
+            required:false,
+        }
+    });
     const app = getCurrentInstance().parent.parent;
-    const createPollRequest = ref(new CreatePollRequest({
-        questions: [ new Question({title: 'Neue Frage', answers: []})],
-        title:'Neue Umfrage',
-        description:'',
+    const createPollRequest = ref(new WritePollRequest({
+        questions: [new Question({ title: 'Neue Frage', answers: [new Answer({text:''}),new Answer({text:''})] })],
+        title: 'Neue Umfrage',
+        description: '',
         apiKey: 'ValidApiKey'
     }));
 
@@ -19,9 +26,11 @@
         if (save) {
             let error = ''
             let rawQuestions = createPollRequest.value.questions.map(a => a.title);
-            let duplicatedQuestions= rawQuestions.filter((item, index) => rawQuestions.indexOf(item) !== index);
-            if (createPollRequest.value.title === '') error = "Titel darf nicht leer sein!";
-            else if (createPollRequest.value.questions.filter(q => q.answers.length<2).length > 0) error = "Es müssen mind. 2 Antworten pro Frage verfügbar sein!";
+            let duplicatedQuestions = rawQuestions.filter((item, index) => rawQuestions.indexOf(item) !== index);
+
+            if (createPollRequest.value.title === '') error = "Titel darf nicht leer sein!";            
+            else if(rawQuestions.filter(q => q === '').length > 0) error='Es darf keine leeren Fragen geben!';
+            else if(createPollRequest.value.questions.filter(q => q.answers.filter(a => a.text === '').length > 0).length > 0) error='Es darf keine leeren Antworten geben!';
             else if (duplicatedQuestions.length > 0) error = `Fragen müssen einzigartig sein!\nFolgende Fragen sind doppelt vorhanden: ${duplicatedQuestions.join(", ")}`
             else {
 
@@ -39,7 +48,7 @@
             }
 
             if (error !== '') {
-                alert(error);
+                Swal.fire('Fehler',error, 'error');
                 return;
             }
         }
@@ -47,6 +56,9 @@
         emit('onClosed', save)
     }
     onMounted(() => {
+
+        //if(props.editPollId > 0)//TODO Load data into viewmodel
+
         myModal = new Modal(document.getElementById('dlg-create-poll'), { backdrop: false });
         myModal.show();
     })
@@ -70,15 +82,13 @@
                     </div>
 
                     <div>
-                        <button class="btn btn-primary btn-sm mx-2" @click="createPollRequest.questions.push(new Question({title:'', answers:[]}))">➕</button>
+                        <button class="btn btn-primary btn-sm mx-2" @click="createPollRequest.questions.push(new Question({title:'', answers:[new Answer(),new Answer()]}))">➕</button>
                         Fragen
                         <div class="card mt-3" v-for="question in createPollRequest.questions">
-
-
                             <div class="card-body">
                                 <h5 class="card-title">
-                                    <button class="btn btn-danger btn-sm me-2 my-2" @click="createPollRequest.questions.splice(createPollRequest.questions.indexOf(q), 1)">🗑</button>
-                                    Frage: <textarea class="form-control" v-model="question.title" />
+                                    <button v-if="createPollRequest.questions.length > 1" class="btn btn-danger btn-sm me-2 my-2" @click="createPollRequest.questions.splice(createPollRequest.questions.indexOf(question), 1)">🗑</button>
+                                    Frage: <textarea class="form-control" v-model="question.title" placeholder="Frage" />
                                 </h5>
                                 <p>
                                     <button class="btn btn-primary btn-sm me-2 my-2" @click="question.answers.push(new Answer({text:'Neue Antwort ' + question.answers.length}))">➕</button>
@@ -87,9 +97,9 @@
                                         <li v-for="answer in question.answers">
                                             <div class="d-flex mb-2">
                                                 <div class="me-2 ">
-                                                    <input class="form-control" v-model="answer.text" />
+                                                    <input class="form-control" v-model="answer.text" placeholder="Antwort" />
                                                 </div>
-                                                <button class="btn btn-danger" @click="question.answers.splice(question.answers.indexOf(answer), 1)">🗑</button>
+                                                <button v-if="question.answers.length > 2" class="btn btn-danger" @click="question.answers.splice(question.answers.indexOf(answer), 1)">🗑</button>
                                             </div>
                                         </li>
                                     </ul>
