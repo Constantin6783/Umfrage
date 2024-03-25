@@ -10,7 +10,6 @@ using ApiAnswer = PollTool.Server.Models.Api.Answer;
 using DbAnswer = PollTool.Server.Models.Database.Answer;
 using PollTool.Server.Models.Database;
 using PollTool.Server.Models.Api;
-using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace PollTool.Server.Controllers
 {
@@ -18,7 +17,7 @@ namespace PollTool.Server.Controllers
     [ApiController]
     public class PollsController : ControllerBase
     {
-        private const string CRITIICAL_ERROR = "Critical error, please contact the administrator";
+        private const string CRITICAL_ERROR = "Critical error, please contact the administrator";
 
         private readonly PollContext _context;
         private readonly ILogger _logger;
@@ -65,7 +64,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(GetPolls));
-                response.ErrorMessage = CRITIICAL_ERROR;
+                response.ErrorMessage = CRITICAL_ERROR;
             }
 
             return response;
@@ -102,7 +101,6 @@ namespace PollTool.Server.Controllers
                 await _context.SaveChangesAsync();
 
 
-                //var newQuestions = 
                 if (request.PollId > 0)
                 {
                     var removableQuestions = await _context.Questions.Where(q => q.PollId == request.PollId)
@@ -138,7 +136,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(CreatePoll));
-                response.ErrorMessage = CRITIICAL_ERROR;
+                response.ErrorMessage = CRITICAL_ERROR;
             }
 
             return response;
@@ -173,7 +171,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(DeletePoll));
-                return new BaseResponse { ErrorMessage = CRITIICAL_ERROR };
+                return new BaseResponse { ErrorMessage = CRITICAL_ERROR };
             }
         }
 
@@ -219,7 +217,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(GetPoll));
-                return new GetPollResponse { ErrorMessage = CRITIICAL_ERROR };
+                return new GetPollResponse { ErrorMessage = CRITICAL_ERROR };
             }
         }
 
@@ -272,7 +270,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(ProcessPoll));
-                return new BaseResponse { ErrorMessage = CRITIICAL_ERROR };
+                return new BaseResponse { ErrorMessage = CRITICAL_ERROR };
             }
         }
 
@@ -310,7 +308,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(PollStatistic));
-                return new PollStatisticResponse { ErrorMessage = CRITIICAL_ERROR };
+                return new PollStatisticResponse { ErrorMessage = CRITICAL_ERROR };
             }
         }
 
@@ -355,7 +353,7 @@ namespace PollTool.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, nameof(PollStatistic));
-                return new EditPollResponse { ErrorMessage = CRITIICAL_ERROR };
+                return new EditPollResponse { ErrorMessage = CRITICAL_ERROR };
             }
         }
 

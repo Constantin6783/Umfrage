@@ -13,7 +13,6 @@
         }
     })
 
-    //const poll = reactive<GetPollResponse>(new GetPollResponse())
     const poll = ref<GetPollResponse>(new GetPollResponse())
     const pollRequest = reactive<ProcessPollRequest>(new ProcessPollRequest({ apiKey: "ValidApiKey", pollId: props.pollid, answereds: [] }));    
     const allAnswered = computed(() => pollRequest.answereds.filter((p) => p.selectedAnswer == 0).length == 0)
